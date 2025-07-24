@@ -1,3 +1,27 @@
+.container_scanning:
+  image:
+    name: docker.io/aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: none
+    TRIVY_NO_PROGRESS: "true"
+    TRIVY_CACHE_DIR: ".trivycache/"
+  script:
+    - trivy --version
+    - trivy clean --scan-cache
+    - time trivy image --download-db-only
+    - mkdir -p .trivycache
+    - time trivy image --input $TAR_IMAGE_NAME --exit-code 0 --format template --template "@/contrib/gitlab.tpl" --output "$FULL_IMAGE_NAME-scanning-report.json" "$FULL_IMAGE_NAME"
+    - time trivy image --input $TAR_IMAGE_NAME --exit-code 0 "$FULL_IMAGE_NAME"
+    - time trivy image --input $TAR_IMAGE_NAME --exit-code 1 --severity CRITICAL "$FULL_IMAGE_NAME"
+  cache:
+    paths:
+      - .trivycache/
+  artifacts:
+    when: always
+    reports:
+      container_scanning: $FULL_IMAGE_NAME-scanning-report.json
+      
 stages:
   - notify
   - build
