@@ -4,19 +4,97 @@ This repository automates building, scanning, and deploying a Node.js applicatio
 
 ---
 
+## Table of Contents
+
+* [Project Structure](#project-structure)
+* [Node.js App Overview](#nodejs-app-overview)
+* [GitLab CI/CD Pipeline](#gitlab-cicd-pipeline)
+
+  * [Stages](#stages)
+  * [Key Jobs](#key-jobs)
+
+    * [slack-notify](#1-slack-notify)
+    * [docker-build-node](#2-docker-build-node)
+    * [trivy-node](#3-trivy-node)
+    * [docker-push-image](#4-docker-push-image)
+    * [deploy-workload](#5-deploy-workload)
+* [Requirements](#requirements)
+* [Kubernetes Deployment Files](#kubernetes-deployment-files)
+* [CI/CD Security Scanning](#cicd-security-scanning)
+* [Final Deployment Output](#final-deployment-output)
+* [Output Results](#output-results)
+* [Steps for Migration into GCP or Alibaba Cloud](#steps-for-migration-into-gcp-or-alibaba-cloud)
+
+
+---
+
+
+# Eyego Deployment CI/CD Pipeline
+
+This repository automates building, scanning, and deploying a Node.js application to AWS EKS using GitLab CI/CD.
+
+---
+
+## Table of Contents
+
+* [Project Structure](#project-structure)
+* [Node.js App Overview](#nodejs-app-overview)
+* [GitLab CI/CD Pipeline](#gitlab-cicd-pipeline)
+
+  * [Stages](#stages)
+  * [Key Jobs](#key-jobs)
+
+    * [slack-notify](#1-slack-notify)
+    * [docker-build-node](#2-docker-build-node)
+    * [trivy-node](#3-trivy-node)
+    * [docker-push-image](#4-docker-push-image)
+    * [deploy-workload](#5-deploy-workload)
+* [Requirements](#requirements)
+* [Kubernetes Deployment Files](#kubernetes-deployment-files)
+* [CI/CD Security Scanning](#cicd-security-scanning)
+* [Final Deployment Output](#final-deployment-output)
+* [Output Results](#output-results)
+* [Steps for Migration into GCP or Alibaba Cloud](#steps-for-migration-into-gcp-or-alibaba-cloud)
+* [License](#license)
+
+---
+
 ## Project Structure
 
 ```
 ├── cluster-workloads/
-│   ├── deployment.yaml      # Kubernetes Deployment manifest
-│   ├── pod.yaml             # (Optional) Kubernetes Pod manifest
-│   └── service.yaml         # Kubernetes Service manifest
+│   ├── deployment.yaml      
+│   ├── pod.yaml             
+│   └── service.yaml         
 ├── nodejs/
-│   ├── app.js               # Simple Node.js web server
-│   ├── Dockerfile           # Container image definition
-│   └── package.json         # Project dependencies and metadata
-└── .gitlab-ci.yml           # GitLab CI/CD pipeline definition
+│   ├── app.js              
+│   ├── Dockerfile           
+│   └── package.json         
+└── .gitlab-ci.yml           
 ```
+
+
+---
+
+## Node.js App Overview
+
+Located in the `nodejs/` folder, this application uses Express to create a simple web server:
+
+```js
+const express = require('express');
+const app = express();
+const port = 3000;
+
+app.get('/', (req, res) => {
+  res.send('Hello Eyego');
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+```
+
+
 
 ---
 
@@ -107,3 +185,29 @@ Deployment URL:
 <load-balancer-host>:<port>
 ```
 
+---
+
+## Output Results
+
+![Deployment URL](Images/url.png)
+![Output](Images/output.png)
+
+
+---
+
+## Steps for Migration into GCP or Alibaba Cloud
+
+### 1. Set proper **Network Configurations** and **Security Groups**.
+
+### 2. Create your **Cluster** and **Image Registry**.
+
+ - Called **Artifact Registry** in GCP
+ - Called **Alibaba Container Registry (ACR)** in Alibaba Cloud
+
+### 3. In `docker-push-image` job:
+* Make sure to install the proper `CLI` the matches your cloud provider and configure the user.
+* Authenticate with your **Image Registry** and push the docker image into it.
+
+### 4. In `deploy-workload`:
+* Make sure to install the proper `CLI` the matches your cloud provider and configure the user.
+* Update `kubeconfig` to match your Kubernetes Engine.
