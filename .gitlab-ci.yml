@@ -1,0 +1,70 @@
+stages:
+  - notify
+  - build
+  - security-scan
+  - deploy
+
+slack-notify:
+  stage: notify
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' --data '{
+        "text": ":drum_with_drumsticks: :drum_with_drumsticks: :drum_with_drumsticks:\n:rocket: NEW DEPLOYMENT :tada:\n\n
+        Project: '"$CI_PROJECT_NAME"'\n
+        Branch: '"$CI_COMMIT_REF_NAME"'\n
+        Pipeline: <'"$CI_PIPELINE_URL"'|#'"$CI_PIPELINE_ID"'>\n
+        Commit: <'"$CI_PROJECT_URL"'/-/commit/'"$CI_COMMIT_SHA"'|'"${CI_COMMIT_SHA:0:8}"'> - '"$CI_COMMIT_MESSAGE"'\n
+        Deployed by '"$GITLAB_USER_NAME"'"
+      }' $SLACK_WEBHOOK
+
+docker-build-node:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - cd nodejs/
+    - docker build -t node-app:latest .
+    - cd ..
+    - docker save node-app:latest -o node-image.tar
+  artifacts:
+    paths:
+      - node-image.tar
+
+trivy-node:
+  stage: security-scan
+  extends: .container_scanning
+  variables:
+    TAR_IMAGE_NAME: node-image.tar
+    FULL_IMAGE_NAME: node-app:latest
+  needs:
+    - docker-build-node
+
+docker-push-image:
+  stage: deploy
+  image: docker:latest
+  services: 
+    - docker:dind
+  before_script:
+          
+    - apt-get update && \
+        apt-get install -y \
+            python3 \
+            python3-pip \
+            python3-setuptools \
+            groff \
+            less \
+        && pip3 install --upgrade pip \
+        && apt-get clean
+    - pip3 --no-cache-dir install --upgrade awscli
+    - CMD ["/bin/bash"]
+    - aws configure set aws_access_key_id $AWS_IAM_ACCESS_KEY
+    - aws configure set aws_secret_access_key $AWS_IAM_SECRET_KEY
+    - aws configure set region $AWS_REGION 
+    - aws configure set output json
+    - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/q1t2i1c7
+    - docker tag node-app:latest $PUBLIC_ECR_IMAGE
+  script:
+    - docker push $PUBLIC_ECR_IMAGE
+  needs:
+    - trivy-node 
