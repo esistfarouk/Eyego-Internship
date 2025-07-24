@@ -4,6 +4,8 @@ This repository automates building, scanning, and deploying a Node.js applicatio
 
 ---
 
+## Deployment URL and port: `a8a9fc154ca95413da83953aa4b158ee-1948532169.eu-north-1.elb.amazonaws.com:5050`
+
 ## Table of Contents
 
 * [Project Structure](#project-structure)
