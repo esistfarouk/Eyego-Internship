@@ -23,68 +23,12 @@
       container_scanning: $FULL_IMAGE_NAME-scanning-report.json
       
 stages:
-  - notify
-  - build
-  - security-scan
+#  - notify
+#  - build
+#  - security-scan
   - deploy
 
-slack-notify:
-  stage: notify
-  script:
-    - |
-      curl -X POST -H 'Content-type: application/json' --data '{
-        "text": ":drum_with_drumsticks: :drum_with_drumsticks: :drum_with_drumsticks:\n:rocket: NEW DEPLOYMENT :tada:\n\n
-        Project: '"$CI_PROJECT_NAME"'\n
-        Branch: '"$CI_COMMIT_REF_NAME"'\n
-        Pipeline: <'"$CI_PIPELINE_URL"'|#'"$CI_PIPELINE_ID"'>\n
-        Commit: <'"$CI_PROJECT_URL"'/-/commit/'"$CI_COMMIT_SHA"'|'"${CI_COMMIT_SHA:0:8}"'> - '"$CI_COMMIT_MESSAGE"'\n
-        Deployed by '"$GITLAB_USER_NAME"'"
-      }' $SLACK_WEBHOOK
 
-docker-build-node:
-  stage: build
-  image: docker:latest
-  services:
-    - docker:dind
-  script:
-    - cd nodejs/
-    - docker build -t node-app:latest .
-    - cd ..
-    - docker save node-app:latest -o node-image.tar
-  artifacts:
-    paths:
-      - node-image.tar
-
-trivy-node:
-  stage: security-scan
-  extends: .container_scanning
-  variables:
-    TAR_IMAGE_NAME: node-image.tar
-    FULL_IMAGE_NAME: node-app:latest
-  needs:
-    - docker-build-node
-
-docker-push-image:
-  stage: deploy
-  image: docker:latest
-  services: 
-    - docker:dind
-  before_script:
-    - apk add --no-cache aws-cli
-    - aws --version
-    - aws configure set aws_access_key_id $AWS_IAM_ACCESS_KEY
-    - aws configure set aws_secret_access_key $AWS_IAM_SECRET_KEY
-    - aws configure set region $AWS_REGION 
-    - aws configure set output json
-    - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/q1t2i1c7
-    - docker load -i node-image.tar
-    - docker tag node-app:latest $PUBLIC_ECR_IMAGE
-  script:
-    - docker push $PUBLIC_ECR_IMAGE
-  needs:
-    - trivy-node 
-    - job: docker-build-node
-      artifacts: true
 
 
 deploy-workload:
@@ -94,7 +38,7 @@ deploy-workload:
     - apk add --no-cache aws-cli curl bash
     
     - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-    - sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+    - install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
     - kubectl version --client
 
     - aws --version
@@ -109,5 +53,5 @@ deploy-workload:
     - kubectl get deploy
     - kubectl get svc
     - kubectl describe node-app-service 
-  needs:
-    - docker-push-image
+#  needs:
+#    - docker-push-image
