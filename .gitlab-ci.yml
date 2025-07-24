@@ -70,18 +70,8 @@ docker-push-image:
   services: 
     - docker:dind
   before_script:
-          
-    - apt-get update && \
-        apt-get install -y \
-            python3 \
-            python3-pip \
-            python3-setuptools \
-            groff \
-            less \
-        && pip3 install --upgrade pip \
-        && apt-get clean
-    - pip3 --no-cache-dir install --upgrade awscli
-    - CMD ["/bin/bash"]
+    - apk add --no-cache aws-cli
+    - aws --version
     - aws configure set aws_access_key_id $AWS_IAM_ACCESS_KEY
     - aws configure set aws_secret_access_key $AWS_IAM_SECRET_KEY
     - aws configure set region $AWS_REGION 
@@ -92,3 +82,20 @@ docker-push-image:
     - docker push $PUBLIC_ECR_IMAGE
   needs:
     - trivy-node 
+
+deploy-workload:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  before_script:
+    - apk add --no-cache aws-cli
+    - aws --version
+    - aws eks update-kubeconfig --region $AWS_REGION  --name $CLUSTER_NAME
+  script:
+    - cd cluster-workloads
+    - kubectl delete -f .
+    - kubectl apply -f .
+  after_script:
+    - kubectl get pods
+    - kubectl get deploy
+    - kubectl get svc
+    - kubectl describe node-app-service
