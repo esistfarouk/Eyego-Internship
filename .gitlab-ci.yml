@@ -43,11 +43,11 @@ deploy-workload:
 
     - aws --version
     - kubectl version --client
-    - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
     - aws configure set aws_access_key_id $AWS_IAM_ACCESS_KEY
     - aws configure set aws_secret_access_key $AWS_IAM_SECRET_KEY
     - aws configure set region $AWS_REGION 
     - aws configure set output json
+    - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
   script:
     - cd cluster-workloads
