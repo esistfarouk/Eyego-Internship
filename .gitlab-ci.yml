@@ -77,6 +77,7 @@ docker-push-image:
     - aws configure set region $AWS_REGION 
     - aws configure set output json
     - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/q1t2i1c7
+    - docker load -i node-image.tar
     - docker tag node-app:latest $PUBLIC_ECR_IMAGE
   script:
     - docker push $PUBLIC_ECR_IMAGE
