@@ -83,6 +83,8 @@ docker-push-image:
     - docker push $PUBLIC_ECR_IMAGE
   needs:
     - trivy-node 
+    - job: docker-build-node
+      artifacts: true
 
 
 deploy-workload:
