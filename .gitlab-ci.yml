@@ -83,19 +83,23 @@ docker-push-image:
   needs:
     - trivy-node 
 
+
 deploy-workload:
   stage: deploy
-  image: bitnami/kubectl:latest
+  image: alpine:3.18  
   before_script:
-    - apk add --no-cache aws-cli
+    - apk add --no-cache aws-cli kubectl  
     - aws --version
-    - aws eks update-kubeconfig --region $AWS_REGION  --name $CLUSTER_NAME
+    - kubectl version --client
+    - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
   script:
     - cd cluster-workloads
-    - kubectl delete -f .
+    - kubectl delete -f . || true  
     - kubectl apply -f .
   after_script:
     - kubectl get pods
     - kubectl get deploy
     - kubectl get svc
-    - kubectl describe node-app-service
+    - kubectl describe node-app-service 
+  needs:
+    - docker-push-image
